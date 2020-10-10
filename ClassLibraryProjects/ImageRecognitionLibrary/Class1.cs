@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using SixLabors.ImageSharp; 
 using SixLabors.ImageSharp.PixelFormats;
 using System.Linq;
@@ -10,21 +9,72 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using Avalonia.Input;
 
 namespace ObjectsImageRecognitionLibrary
 {
-    public static class ImageRecognitionLibrary
+    // Event for output
+    public delegate void EventHandler(object sender, ObjectInImageProbability structureObject);
+    
+    // Structure consisting of directory name, one recognized object and probability of the right choice for output
+    public struct ObjectInImageProbability
     {
-        //Objects in the image recognition with neural network function
-        static void ImageRecognition(string FileName){
-            
-            // Image loading
-            using var image = Image.Load<Rgb24>(FileName);
-            
+        public string Path { get; }
+
+        public string ClassLabel { get; }
+
+        public float Probability { get; }
+
+        public ObjectInImageProbability(string path, string classLabel, float probability)
+        {
+            this.Path = path;
+            this.ClassLabel = classLabel;
+            this.Probability = probability;
+        }
+    }
+
+    public class ImageRecognitionLibrary
+    {
+        // Event for output
+        public event EventHandler ResultEvent;
+
+        // Session created for neural network probability computation 
+        private static InferenceSession session;
+
+        // Token for cancellation
+        CancellationTokenSource cts = new CancellationTokenSource();
+
+        public void RecognitionStop(CancellationTokenSource cts){
+            cts.Cancel();
+        }
+
+        // BEGINNING // Preparation for Avalonia // If the "Escape" is pressed, the recognition will stop
+        public event EventHandler<KeyEventArgs> KeyDown;
+        private void ImageRecognitionLibrary_KeyDown(object sender, KeyEventArgs e)
+        {  
+            if (e.Key == Key.Escape)
+            RecognitionStop(cts);
+        }
+        // THE END 
+
+        // Class Constructor
+        public ImageRecognitionLibrary(){
+            // Session initialization for all images in directory
+            session = new InferenceSession("resnet152-v2-7.onnx");
+            // Preparation for Avalonia
+            KeyDown += ImageRecognitionLibrary_KeyDown;
+        }
+
+        //Objects in one image recognition with neural network function
+        private static ObjectInImageProbability ImageRecognition(string fileName)
+        {
             const int TargetWidth = 224;
             const int TargetHeight = 224;
 
-            // Changing picture size to 224 x 224
+            // Image loading
+            using var image = Image.Load<Rgb24>(fileName);
+
+            // Changing picture size to targeted sizes
             image.Mutate(x =>
             {
                 x.Resize(new ResizeOptions
@@ -55,80 +105,48 @@ namespace ObjectsImageRecognitionLibrary
                 NamedOnnxValue.CreateFromTensor("data", input) 
             };
 
-            // Neural network prediction computation
-            using var session = new InferenceSession("resnet152-v2-7.onnx");       
+            // Neural network probability computation     
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
 
-            // Getting 1000 outputs; softmax calculation
+            // Getting outputs
             var output = results.First().AsEnumerable<float>().ToArray();
             var sum = output.Sum(x => (float)Math.Exp(x));
             var softmax = output.Select(x => (float)Math.Exp(x) / sum);
+            float probability = softmax.Max();
+            int classLabelsObjectsNumber = softmax.ToList().IndexOf(probability);
+            probability = probability * 100.0f;
+            string classLabel = classLabels[classLabelsObjectsNumber];
 
-            // Displaying 10 most likely results on the screen
-            lock(lockObject){
-                Console.WriteLine("Predicting contents of image at " + FileName);
-                foreach(var p in softmax
-                    .Select((x, i) => new { Label = classLabels[i], Confidence = x })
-                    .OrderByDescending(x => x.Confidence)
-                    .Take(10))
-                    Console.WriteLine($"{p.Label} with confidence {p.Confidence}");
-                Console.WriteLine("");
-            }
+            return new ObjectInImageProbability(fileName, classLabel, probability);
         }
 
-        // Getting all the images from directory, their recognition and recognition cancellation function
-        public static void ProgramStart(string path)
+        // Getting all the images from existing or default directory and recognition of objects using TPL
+        public void ProgramStart(string path)
         {
-            // Tokens // Their description is in the "tokenTask" section
-            CancellationTokenSource stopToken = new CancellationTokenSource();
-            CancellationTokenSource exitToken = new CancellationTokenSource();
-
+            //If the directory does not exist, the default directory will be used
+            if (!Directory.Exists(path)){
+                path = "C:\\Users\\justd\\OneDrive\\Рабочий стол\\s02170502\\Images";
+            }
             // Getting all the .jpg pictures from directory
-            string[] filePaths = Directory.GetFiles(@path, "*.jpg");
-
-            Task tokenTask = Task.Run(() =>
-            {
-                // If "s" + "Enter" were pressed, the recognition will be stopped with "stopToken" token
-                Console.WriteLine("Press \"s\" to cancel the operation, or another symbol to continue:");
-                while(!(Console.ReadLine() == "s"))
-                {
-                    // If "s" + "Enter" were NOT pressed, the program will exit the loop with "exitToken" token
-                    if (exitToken.IsCancellationRequested)
-                    {
-                        break;
-                    }
-                }
-                stopToken.Cancel();
-            });         
+            string[] filePaths = Directory.GetFiles(@path, "*.jpg");      
             
-            // Data processing with TPL
+            // Data processing with TPL [tasks]
             var tasks = new Task[filePaths.Count()];
             for (int i = 0; i <= filePaths.Count()-1; i++){
-
                 tasks[i] = Task.Factory.StartNew(pi =>
                 {
                     int idx = (int)pi;
-                    
-                    if (!stopToken.IsCancellationRequested)
+                    if (!cts.Token.IsCancellationRequested)
                     {
-                        ImageRecognition(filePaths[idx]); 
-                    }
-
-                    if (idx == (filePaths.Count() - 1))
-                    {
-                        exitToken.Cancel();
+                        ObjectInImageProbability result = ImageRecognition(filePaths[idx]);
+                        this.ResultEvent?.Invoke(this, result);
                     }
                 }, i);
             }
-
             Task.WaitAll(tasks);
-
-            Console.WriteLine("Object recognition in pictures is finished!");
         }
-
-        // Variable used for lock operator
-        private static readonly object lockObject = new object();
     
+    // List of objects that can be recognized
         static readonly string[] classLabels = new[] 
         {   
             "tench",
@@ -1134,6 +1152,3 @@ namespace ObjectsImageRecognitionLibrary
         };
     }
 }
-
-//<OutputType>Exe</OutputType>
-// Пример на основе https://github.com/microsoft/onnxruntime/tree/master/csharp/sample/Microsoft.ML.OnnxRuntime.ResNet50v2Sample
