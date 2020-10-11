@@ -44,25 +44,15 @@ namespace ObjectsImageRecognitionLibrary
         // Token for cancellation
         CancellationTokenSource cts = new CancellationTokenSource();
 
+        // Token cancellation for recognition stop
         public void RecognitionStop(CancellationTokenSource cts){
             cts.Cancel();
         }
-
-        // BEGINNING // Preparation for Avalonia // If the "Escape" is pressed, the recognition will stop
-        public event EventHandler<KeyEventArgs> KeyDown;
-        private void ImageRecognitionLibrary_KeyDown(object sender, KeyEventArgs e)
-        {  
-            if (e.Key == Key.Escape)
-            RecognitionStop(cts);
-        }
-        // THE END 
 
         // Class Constructor
         public ImageRecognitionLibrary(){
             // Session initialization for all images in directory
             session = new InferenceSession("resnet152-v2-7.onnx");
-            // Preparation for Avalonia
-            KeyDown += ImageRecognitionLibrary_KeyDown;
         }
 
         //Objects in one image recognition with neural network function
