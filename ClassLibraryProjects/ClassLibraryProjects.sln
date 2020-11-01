@@ -1,18 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImageRecognitionLibrary", "ImageRecognitionLibrary\ImageRecognitionLibrary.csproj", "{5DD58A14-A752-4B9D-A3C3-CD2656C1CD35}"
+
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ImageRecognitionLibrary", "ImageRecognitionLibrary", "{F405A71A-E376-4B26-94E9-5B2AA171AA4F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShowCase", "ImageRecognitionLibrary\ShowCase\ShowCase.csproj", "{DB8359F9-7B94-4D9C-BB16-2E33DB6DAFC7}"
 EndProject
+
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{752A7EE0-9BBE-4E31-BD8B-4956F25C0CE6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfApp", "WpfApp\WpfApp.csproj", "{60D65BAB-B131-4BD0-85DE-FCCCFE5D6472}"
 EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,6 +26,11 @@ Global
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
+
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5DD58A14-A752-4B9D-A3C3-CD2656C1CD35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5DD58A14-A752-4B9D-A3C3-CD2656C1CD35}.Debug|Any CPU.Build.0 = Debug|Any CPU
@@ -47,6 +56,7 @@ Global
 		{DB8359F9-7B94-4D9C-BB16-2E33DB6DAFC7}.Release|x64.Build.0 = Release|Any CPU
 		{DB8359F9-7B94-4D9C-BB16-2E33DB6DAFC7}.Release|x86.ActiveCfg = Release|Any CPU
 		{DB8359F9-7B94-4D9C-BB16-2E33DB6DAFC7}.Release|x86.Build.0 = Release|Any CPU
+
 		{752A7EE0-9BBE-4E31-BD8B-4956F25C0CE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{752A7EE0-9BBE-4E31-BD8B-4956F25C0CE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{752A7EE0-9BBE-4E31-BD8B-4956F25C0CE6}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -74,10 +84,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{DB8359F9-7B94-4D9C-BB16-2E33DB6DAFC7} = {F405A71A-E376-4B26-94E9-5B2AA171AA4F}
 	EndGlobalSection
+  
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57889C4E-26B4-43A1-B4DE-39E2D717993F}
 	EndGlobalSection
