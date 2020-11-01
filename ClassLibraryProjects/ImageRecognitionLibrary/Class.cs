@@ -86,7 +86,7 @@ namespace ObjectsImageRecognitionLibrary
             var softmax = output.Select(x => (float)Math.Exp(x) / sum);
             float probability = softmax.Max();
             int classLabelsObjectsNumber = softmax.ToList().IndexOf(probability);
-            probability = probability * 100.0f;
+            probability *= 100.0f;
             string classLabel = classLabels[classLabelsObjectsNumber];
 
             return new ObjectInImageProbability(fileName, classLabel, probability);
