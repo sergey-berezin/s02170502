@@ -93,7 +93,7 @@ namespace ObjectsImageRecognitionLibrary
         }
 
         // Getting the current directory path
-        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.Parent.Parent.FullName;
+        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
         
         // Token for cancellation
         readonly CancellationTokenSource cts = new CancellationTokenSource();
