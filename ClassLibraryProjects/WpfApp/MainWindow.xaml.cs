@@ -14,9 +14,14 @@ namespace WpfApp
             }
         }
 
+        private void DatabaseCleaningButton_Click(object sender, RoutedEventArgs e)
+        {
+            RecognitionViewModel.DatabaseCleaning();
+        }
+
         private void FolderOpeningButton_Click(object sender, RoutedEventArgs e)
         {
-            if (RecognitionViewModel != null && RecognitionViewModel.RecognitionStatus == false)
+            if (RecognitionViewModel != null && RecognitionViewModel.RecognitionStatus == false && RecognitionViewModel.DatabaseCleaningStatus == false)
             {
                 var dialog = new Ookii.Dialogs.Wpf.VistaFolderBrowserDialog();
                 if (dialog.ShowDialog(this).GetValueOrDefault())
@@ -48,5 +53,6 @@ namespace WpfApp
             this.DataContext = RecognitionViewModel;
             RecognitionViewModel.RecognitionStatus = false;
         }
+
     }
 }
