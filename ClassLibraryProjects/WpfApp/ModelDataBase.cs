@@ -76,7 +76,6 @@ namespace WpfApp
                 if (flag == true)
                 {
                     image = new ImageObject(item.ClassLabel.StringClassLabel, item.Probability, item.ClassLabel.ClassLabelImagesNumber);
-                    SaveChanges();
                     break;
                 }
             }

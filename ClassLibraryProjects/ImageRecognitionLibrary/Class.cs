@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using System.ComponentModel;
 
 namespace ObjectsImageRecognitionLibrary
 {
@@ -16,13 +17,42 @@ namespace ObjectsImageRecognitionLibrary
     public delegate void EventHandler(object sender, ObjectInImageProbability structureObject);
     
     // Structure consisting of directory name, one recognized object and probability of the right choice for output
-    public struct ObjectInImageProbability
+    public class ObjectInImageProbability
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+        private string label;
+        private float probability;
         public string Path { get; set; }
 
-        public string ClassLabel { get; set; }
+        //public string ClassLabel { get; set; }
+        public string ClassLabel
+        {
+            get
+            {
+                return label;
+            }
 
-        public float Probability { get; set; }
+            set
+            {
+                label = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassLabel"));
+            }
+        }
+
+        //public float Probability { get; set; }
+        public float Probability
+        {
+            get
+            {
+                return probability;
+            }
+
+            set
+            {
+                probability = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Probability"));
+            }
+        }
 
         public ObjectInImageProbability(string path, string classLabel, float probability)
         {

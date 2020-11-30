@@ -10,6 +10,7 @@
         <Button x:Name="InterruptButton" Content="Recognition Process Interruption" Click="InterruptButton_Click" HorizontalAlignment="Left" Margin="19,45,0,0" VerticalAlignment="Top" Height="21" Width="151" Background="#FFF32222" FontSize="10"/>
         <Button x:Name="FolderOpeningButton" Content="Open Folder" Click="FolderOpeningButton_Click" HorizontalAlignment="Left" Margin="19,14,0,0" VerticalAlignment="Top"/>
         <Button x:Name="DatabaseCleaning" Content="Database Cleaning" Click="DatabaseCleaningButton_Click" HorizontalAlignment="Left" Margin="185,46,0,0" VerticalAlignment="Top"/>
+        <Button Content="StatUpdate" Click="StatUpdateButton_Click" HorizontalAlignment="Left" Margin="315,46,0,0" VerticalAlignment="Top" Height="20" Width="100"/>
         
         <ListBox x:Name="ImagesAndInformationListBox" Margin="19,92,541,32" ItemsSource="{Binding Path=ImageCollection, UpdateSourceTrigger=PropertyChanged}">
             <ListBox.ItemTemplate>

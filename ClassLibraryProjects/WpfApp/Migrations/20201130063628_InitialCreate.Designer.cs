@@ -9,7 +9,7 @@ using WpfApp;
 namespace WpfApp.Migrations
 {
     [DbContext(typeof(ModelContext))]
-    [Migration("20201122165045_InitialCreate")]
+    [Migration("20201130063628_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -14,27 +14,16 @@ namespace WpfApp
     {
         private ImageRecognitionLibrary LibraryObject;
         private ModelContext model;
-        private object LockObject;
+        private readonly object LockObject;
         readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
-
         private void EventHandler(object sender, ObjectInImageProbability StructureObject)
         {
             dispatcher.BeginInvoke(new Action(() =>
             {
-                //ImageCollection.Add(StructureObject);
-                //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ImageCollection"));
-                //AllClassLabels ClassLabel = AllClassLabelsCollection.First(picture => picture.ClassLabel == StructureObject.ClassLabel);
-                //ClassLabel.NumberOfTimes++;
-                //ClassLabel.DatabaseNumberOfTimes++;
-                //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AllClassLabelsCollection"));
-                ObjectInImageProbability image = ImageCollection.First(item => item.Path == StructureObject.Path);
-                image.ClassLabel = StructureObject.ClassLabel;
-                image.Probability = StructureObject.Probability;
-                AllClassLabels label = AllClassLabelsCollection.First(item => item.ClassLabel == image.ClassLabel);
+                ImageCollection.Add(new ObjectInImageProbability(StructureObject.Path, StructureObject.ClassLabel, StructureObject.Probability));
+                AllClassLabels label = AllClassLabelsCollection.First(item => item.ClassLabel == StructureObject.ClassLabel);
                 label.NumberOfTimes++;
-                label.DatabaseNumberOfTimes++;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ImageCollection"));
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AllClassLabelsCollection"));
                 Task.Run(() =>
                 {
                     lock (LockObject)
@@ -42,7 +31,6 @@ namespace WpfApp
                         model.DatabaseAdding(StructureObject);
                     }
                 });
-                //model.DatabaseAdding(StructureObject);
             }));
         }
 
@@ -54,18 +42,8 @@ namespace WpfApp
             {
                 foreach (var path in Directory.GetFiles(ChosenDirectoryPath, "*.jpg"))
                 {
-                    dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        ImageCollection.Add(new ObjectInImageProbability()
-                        {
-                            Path = path,
-                            ClassLabel = "null",
-                            Probability = -1
-                        });
-                    }));
-                    
                     ImageObject ObjectCheck = model.DatabaseCheck(path);
-                    //LibraryObject.ProgramStart(ChosenDirectoryPath);
+
                     dispatcher.BeginInvoke(new Action(() =>
                     {
                         if (ObjectCheck == null)
@@ -79,16 +57,11 @@ namespace WpfApp
                         }
                         else
                         {
-                            ObjectInImageProbability image = ImageCollection.First(item => item.Path == path);
-                            image.ClassLabel = ObjectCheck.ClassLabel;
-                            image.Probability = ObjectCheck.Probability;
-                            AllClassLabels label = AllClassLabelsCollection.First(item => item.ClassLabel == image.ClassLabel);
+                            ImageCollection.Add(new ObjectInImageProbability(path, ObjectCheck.ClassLabel, ObjectCheck.Probability));
+                            AllClassLabels label = AllClassLabelsCollection.First(item => item.ClassLabel == ObjectCheck.ClassLabel);
                             label.NumberOfTimes++;
-                            label.DatabaseNumberOfTimes = ObjectCheck.Number;
                             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ImageCollection"));
-                            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AllClassLabelsCollection"));
                         }
-                        //RecognitionStatus = false;
                     }));
                 }
                 RecognitionStatus = false;
@@ -123,8 +96,6 @@ namespace WpfApp
 
         public void NewOpeningAndRecognition()
         {
-            //LibraryObject = new ImageRecognitionLibrary();
-            //LibraryObject.ResultEvent += EventHandler;
             ImageCollection.Clear();
             SingleClassLabelCollection.Clear();
             for (int i = 0; i <= 999; i++)
@@ -152,14 +123,16 @@ namespace WpfApp
 
         public void DatabaseCleaning()
         {
-            DatabaseCleaningStatus = true;
-            model.DatabaseCleanup();
-            model = new ModelContext();
-            foreach (AllClassLabels label in AllClassLabelsCollection)
+            if (RecognitionStatus == false)
             {
-                label.DatabaseNumberOfTimes = 0;
+                lock (LockObject)
+                {
+                    DatabaseCleaningStatus = true;
+                    model.DatabaseCleanup();
+                    model = new ModelContext();
+                    DatabaseCleaningStatus = false;
+                }
             }
-            DatabaseCleaningStatus = false;
         }
     }
 
