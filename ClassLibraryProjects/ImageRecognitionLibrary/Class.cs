@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using System.ComponentModel;
 
 namespace ObjectsImageRecognitionLibrary
 {
@@ -16,13 +17,42 @@ namespace ObjectsImageRecognitionLibrary
     public delegate void EventHandler(object sender, ObjectInImageProbability structureObject);
     
     // Structure consisting of directory name, one recognized object and probability of the right choice for output
-    public struct ObjectInImageProbability
+    public class ObjectInImageProbability
     {
-        public string Path { get; }
+        private string label;
+        private float probability;
+        
+        public event PropertyChangedEventHandler PropertyChanged;
+        
+        public string Path { get; set; }
 
-        public string ClassLabel { get; }
+        public string ClassLabel
+        {
+            get
+            {
+                return label;
+            }
 
-        public float Probability { get; }
+            set
+            {
+                label = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassLabel"));
+            }
+        }
+
+        public float Probability
+        {
+            get
+            {
+                return probability;
+            }
+
+            set
+            {
+                probability = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Probability"));
+            }
+        }
 
         public ObjectInImageProbability(string path, string classLabel, float probability)
         {
@@ -93,7 +123,7 @@ namespace ObjectsImageRecognitionLibrary
         }
 
         // Getting the current directory path
-        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).Parent.Parent.Parent.Parent.FullName;
+        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
         
         // Token for cancellation
         readonly CancellationTokenSource cts = new CancellationTokenSource();
@@ -116,12 +146,21 @@ namespace ObjectsImageRecognitionLibrary
         public void ProgramStart(string path)
         {
             //If the directory does not exist, the default directory will be used
-            if (!Directory.Exists(path)){
-                path = Path.Combine(StartDirectory, "Images");
-            }
+            //if (!Directory.Exists(path)){
+            //    path = Path.Combine(StartDirectory, "Images");
+            //}
             // Getting all the .jpg pictures from directory
-            string[] filePaths = Directory.GetFiles(@path, "*.jpg");      
-            
+            string[] filePaths;
+            try
+            {
+                filePaths = Directory.GetFiles(@path, "*.jpg");
+            }
+            catch (IOException)
+            {
+                filePaths = new string[1];
+                filePaths[0] = path;
+            }
+                 
             // Data processing with TPL [tasks]
             var tasks = new Task[filePaths.Count()];
             for (int i = 0; i <= filePaths.Count()-1; i++){

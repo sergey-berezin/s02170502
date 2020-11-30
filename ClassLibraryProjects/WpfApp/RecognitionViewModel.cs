@@ -5,36 +5,66 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Threading;
 using System.Threading;
+using System.Threading.Tasks;
+using System.IO;
 
 namespace WpfApp
 {
     public class RecognitionViewModel: INotifyPropertyChanged
     {
         private ImageRecognitionLibrary LibraryObject;
+        private ModelContext model;
+        private readonly object LockObject;
         readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
-
         private void EventHandler(object sender, ObjectInImageProbability StructureObject)
         {
             dispatcher.BeginInvoke(new Action(() =>
             {
-                ImageCollection.Add(StructureObject);
+                ImageCollection.Add(new ObjectInImageProbability(StructureObject.Path, StructureObject.ClassLabel, StructureObject.Probability));
+                AllClassLabels label = AllClassLabelsCollection.First(item => item.ClassLabel == StructureObject.ClassLabel);
+                label.NumberOfTimes++;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ImageCollection"));
-                AllClassLabels ClassLabel = AllClassLabelsCollection.First(picture => picture.ClassLabel == StructureObject.ClassLabel);
-                ClassLabel.NumberOfTimes++;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AllClassLabelsCollection"));
+                Task.Run(() =>
+                {
+                    lock (LockObject)
+                    {
+                        model.DatabaseAdding(StructureObject);
+                    }
+                });
             }));
         }
 
         private void ImageRecognitionInWPF()
         {
             RecognitionStatus = true;
+            
             ThreadPool.QueueUserWorkItem(new WaitCallback(MagicParameter =>
             {
-                LibraryObject.ProgramStart(ChosenDirectoryPath);
-                dispatcher.BeginInvoke(new Action(() =>
+                foreach (var path in Directory.GetFiles(ChosenDirectoryPath, "*.jpg"))
                 {
-                    RecognitionStatus = false;
-                }));
+                    ImageObject ObjectCheck = model.DatabaseCheck(path);
+
+                    dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        if (ObjectCheck == null)
+                        {
+                            Task.Run(() =>
+                            {
+                                LibraryObject = new ImageRecognitionLibrary();
+                                LibraryObject.ResultEvent += EventHandler;
+                                LibraryObject.ProgramStart(path);
+                            });
+                        }
+                        else
+                        {
+                            ImageCollection.Add(new ObjectInImageProbability(path, ObjectCheck.ClassLabel, ObjectCheck.Probability));
+                            AllClassLabels label = AllClassLabelsCollection.First(item => item.ClassLabel == ObjectCheck.ClassLabel);
+                            label.NumberOfTimes++;
+                            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ImageCollection"));
+                        }
+                    }));
+                }
+                RecognitionStatus = false;
             }));
         }
 
@@ -43,6 +73,7 @@ namespace WpfApp
         public ObservableCollection<ObjectInImageProbability> SingleClassLabelCollection { get; set; }
         public ObservableCollection<AllClassLabels> AllClassLabelsCollection { get; set; }
         public bool RecognitionStatus = false;
+        public bool DatabaseCleaningStatus = false;
         public string ChosenDirectoryPath { get; set; }
 
         public RecognitionViewModel()
@@ -50,20 +81,21 @@ namespace WpfApp
             ImageCollection = new ObservableCollection<ObjectInImageProbability>();
             SingleClassLabelCollection = new ObservableCollection<ObjectInImageProbability>();
             AllClassLabelsCollection = new ObservableCollection<AllClassLabels>();
+            model = new ModelContext();
+            LockObject = new object();
             for (int i = 0; i <= 999; i++)
             {
                 AllClassLabelsCollection.Add(new AllClassLabels()
                 {
                     ClassLabel = ImageRecognitionLibrary.classLabels[i],
-                    NumberOfTimes = 0
+                    NumberOfTimes = 0,
+                    DatabaseNumberOfTimes = 0
                 });
             }
         }
 
         public void NewOpeningAndRecognition()
         {
-            LibraryObject = new ImageRecognitionLibrary();
-            LibraryObject.ResultEvent += EventHandler;
             ImageCollection.Clear();
             SingleClassLabelCollection.Clear();
             for (int i = 0; i <= 999; i++)
@@ -88,11 +120,26 @@ namespace WpfApp
             }
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("SingleClassLabelCollection"));
         }
+
+        public void DatabaseCleaning()
+        {
+            if (RecognitionStatus == false)
+            {
+                lock (LockObject)
+                {
+                    DatabaseCleaningStatus = true;
+                    model.DatabaseCleanup();
+                    model = new ModelContext();
+                    DatabaseCleaningStatus = false;
+                }
+            }
+        }
     }
 
     public class AllClassLabels : INotifyPropertyChanged
     {
         private int times;
+        private int DatabaseTimes;
         public string ClassLabel { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -108,6 +155,20 @@ namespace WpfApp
             {
                 times = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("NumberOfTimes"));
+            }
+        }
+
+        public int DatabaseNumberOfTimes
+        {
+            get
+            {
+                return DatabaseTimes;
+            }
+
+            set
+            {
+                DatabaseTimes = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DatabaseNumberOfTimes"));
             }
         }
     }
