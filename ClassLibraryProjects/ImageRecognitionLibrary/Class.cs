@@ -19,12 +19,13 @@ namespace ObjectsImageRecognitionLibrary
     // Structure consisting of directory name, one recognized object and probability of the right choice for output
     public class ObjectInImageProbability
     {
-        public event PropertyChangedEventHandler PropertyChanged;
         private string label;
         private float probability;
+        
+        public event PropertyChangedEventHandler PropertyChanged;
+        
         public string Path { get; set; }
 
-        //public string ClassLabel { get; set; }
         public string ClassLabel
         {
             get
@@ -39,7 +40,6 @@ namespace ObjectsImageRecognitionLibrary
             }
         }
 
-        //public float Probability { get; set; }
         public float Probability
         {
             get
