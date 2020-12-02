@@ -21,9 +21,10 @@ namespace WpfApp
             dispatcher.BeginInvoke(new Action(() =>
             {
                 ImageCollection.Add(new ObjectInImageProbability(StructureObject.Path, StructureObject.ClassLabel, StructureObject.Probability));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ImageCollection"));
                 AllClassLabels label = AllClassLabelsCollection.First(item => item.ClassLabel == StructureObject.ClassLabel);
                 label.NumberOfTimes++;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ImageCollection"));
+                
                 Task.Run(() =>
                 {
                     lock (LockObject)
