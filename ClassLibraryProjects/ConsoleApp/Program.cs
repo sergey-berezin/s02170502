@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using ObjectsImageRecognitionLibrary;
 
 class Program
@@ -21,3 +21,4 @@ class Program
         LibraryObject.ProgramStart(directory);
     }
 }
+*/

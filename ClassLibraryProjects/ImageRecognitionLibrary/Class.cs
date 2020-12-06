@@ -67,6 +67,10 @@ namespace ObjectsImageRecognitionLibrary
         // Session created for neural network probability computation 
         private static InferenceSession session;
 
+        private ModelContext ModelContext;
+
+        private object LockObject;
+
         //Objects in one image recognition with neural network function
         private static ObjectInImageProbability ImageRecognition(string fileName)
         {
@@ -123,10 +127,10 @@ namespace ObjectsImageRecognitionLibrary
         }
 
         // Getting the current directory path
-        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
+        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).FullName;
         
         // Token for cancellation
-        readonly CancellationTokenSource cts = new CancellationTokenSource();
+        CancellationTokenSource cts = new CancellationTokenSource();
 
         // Event for output
         public event EventHandler ResultEvent;
@@ -140,26 +144,16 @@ namespace ObjectsImageRecognitionLibrary
         public ImageRecognitionLibrary(){
             // Session initialization for all images in directory
             session = new InferenceSession(Path.Combine(StartDirectory, "resnet152-v2-7.onnx"));
+            ModelContext = new ModelContext();
+            LockObject = new object();
         }
 
         // Getting all the images from existing or default directory and recognition of objects using TPL
         public void ProgramStart(string path)
         {
-            //If the directory does not exist, the default directory will be used
-            //if (!Directory.Exists(path)){
-            //    path = Path.Combine(StartDirectory, "Images");
-            //}
+            cts = new CancellationTokenSource();
             // Getting all the .jpg pictures from directory
-            string[] filePaths;
-            try
-            {
-                filePaths = Directory.GetFiles(@path, "*.jpg");
-            }
-            catch (IOException)
-            {
-                filePaths = new string[1];
-                filePaths[0] = path;
-            }
+            string[] filePaths = Directory.GetFiles(@path, "*.jpg");
                  
             // Data processing with TPL [tasks]
             var tasks = new Task[filePaths.Count()];
@@ -167,11 +161,35 @@ namespace ObjectsImageRecognitionLibrary
                 tasks[i] = Task.Factory.StartNew(pi =>
                 {
                     int idx = (int)pi;
-                    if (!cts.Token.IsCancellationRequested)
+                    ImageObject image;
+                    
+                    lock (LockObject)
                     {
-                        ObjectInImageProbability result = ImageRecognition(filePaths[idx]);
-                        this.ResultEvent?.Invoke(this, result);
+                        image = ModelContext.DatabaseCheck(filePaths[idx]);
                     }
+
+                    if (image == null)
+                    {
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            ObjectInImageProbability result = ImageRecognition(filePaths[idx]);
+                            this.ResultEvent?.Invoke(this, result);
+                            
+                            lock (LockObject)
+                            {
+                                ModelContext.DatabaseAdding(result);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            ObjectInImageProbability result = new ObjectInImageProbability(filePaths[idx], image.ClassLabel, image.Probability);
+                            this.ResultEvent?.Invoke(this, result);
+                        }
+                    }
+
                 }, i);
             }
             Task.WaitAll(tasks);

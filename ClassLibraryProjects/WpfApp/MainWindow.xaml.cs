@@ -10,7 +10,7 @@ namespace WpfApp
     {
         private void InterruptButton_Click(object sender, RoutedEventArgs e)
         {
-            if (RecognitionViewModel != null && RecognitionViewModel.RecognitionStatus == true)
+            if (RecognitionViewModel != null && RecognitionViewModel.RecognitionStatus == true && RecognitionViewModel.DatabaseCleaningStatus == false)
             {
                 RecognitionViewModel.Stop();
             }
@@ -28,14 +28,7 @@ namespace WpfApp
         {
             if (RecognitionViewModel != null && RecognitionViewModel.RecognitionStatus == false && RecognitionViewModel.DatabaseCleaningStatus == false)
             {
-                ModelContext model = new ModelContext();
-                foreach (var label in RecognitionViewModel.AllClassLabelsCollection)
-                {
-                    var query = from item in model.ClassLabels
-                                where item.StringClassLabel == label.ClassLabel
-                                select item.ClassLabelImagesNumber; 
-                    label.DatabaseNumberOfTimes = query.FirstOrDefault();
-                }
+                RecognitionViewModel.StatisticsGetting();
             }
         }
 
@@ -62,27 +55,6 @@ namespace WpfApp
             {
                 RecognitionViewModel.CollectionFilter(ClassLabelElement);
             }
-        }
-
-        private static BitmapImage LoadImage(byte[] imageData)
-        {
-            if (imageData == null || imageData.Length == 0)
-            {
-                return null;
-            }
-            var image = new BitmapImage();
-            using (var mem = new MemoryStream(imageData))
-            {
-                mem.Position = 0;
-                image.BeginInit();
-                image.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.UriSource = null;
-                image.StreamSource = mem;
-                image.EndInit();
-            }
-            image.Freeze();
-            return image;
         }
 
         public RecognitionViewModel RecognitionViewModel;

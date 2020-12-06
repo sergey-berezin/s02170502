@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using ObjectsImageRecognitionLibrary;
 
-namespace WpfApp
+namespace ObjectsImageRecognitionLibrary
 {
     public class Blob
     {
