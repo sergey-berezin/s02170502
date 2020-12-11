@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +43,8 @@ namespace ObjectsImageRecognitionLibrary
 
     public class ModelContext: DbContext
     {
-        protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=model.db");
+        private readonly string DatabaseDirectory = @"..\ClassLibraryProjects\ImageRecognitionLibrary\model.db";
+        protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source = " + DatabaseDirectory);
         public DbSet<Blob> ImageContext { get; set; }
         public DbSet<ClassLabel> ClassLabels { get; set; }
         public DbSet<ImageInformation> ImagesInformation { get; set; } 

@@ -1,4 +1,4 @@
-﻿/*using System;
+﻿using System;
 using ObjectsImageRecognitionLibrary;
 
 class Program
@@ -16,9 +16,9 @@ class Program
         string directory = Console.ReadLine();
 
         // Library object creation, subscription to the event and recognition of objects in image
-        ImageRecognitionLibrary LibraryObject = new ImageRecognitionLibrary();
+        ObjectsImageRecognitionLibrary.ImageRecognitionLibrary LibraryObject = new ObjectsImageRecognitionLibrary.ImageRecognitionLibrary();
         LibraryObject.ResultEvent += EventHandler;
         LibraryObject.ProgramStart(directory);
     }
 }
-*/
+

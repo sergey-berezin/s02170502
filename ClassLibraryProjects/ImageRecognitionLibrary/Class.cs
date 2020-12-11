@@ -64,12 +64,11 @@ namespace ObjectsImageRecognitionLibrary
 
     public class ImageRecognitionLibrary
     {
+        private readonly ModelContext ModelContext;
+        private readonly object LockObject;
+
         // Session created for neural network probability computation 
         private static InferenceSession session;
-
-        private ModelContext ModelContext;
-
-        private object LockObject;
 
         //Objects in one image recognition with neural network function
         private static ObjectInImageProbability ImageRecognition(string fileName)

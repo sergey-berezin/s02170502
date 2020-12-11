@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Threading;
 using System.Threading;
-using System.Threading.Tasks;
 using System.IO;
 using System.Net.Http;
 using System.Windows.Media.Imaging;
@@ -12,6 +11,7 @@ using Newtonsoft.Json;
 using System.Text;
 using System.Windows;
 using System.Collections.Generic;
+using LibraryContracts;
 
 namespace WpfApp
 {
@@ -61,7 +61,7 @@ namespace WpfApp
                     {
                         await dispatcher.BeginInvoke(new Action(() =>
                         {
-                            MessageBox.Show("The connection is lost...");
+                            MessageBox.Show("The connection with server is lost...");
                             Stop();
                         }));
 
@@ -80,7 +80,7 @@ namespace WpfApp
                                     Image = LoadImage(Convert.FromBase64String(image.Image)),
                                     Path = image.Path,
                                     ClassLabel = image.ClassLabel,
-                                    Probability = (float)Convert.ToDouble(image.Probability)
+                                    Probability = image.Probability
                                 });
                                 AllClassLabels label = AllClassLabelsCollection.First(element => element.ClassLabel == Convert.ToString(image.ClassLabel));
                                 label.NumberOfTimes++;
@@ -120,7 +120,8 @@ namespace WpfApp
                 AllClassLabelsCollection.Add(new AllClassLabels()
                 {
                     ClassLabel = classLabels[i],
-                    NumberOfTimes = 0
+                    NumberOfTimes = 0,
+                    DatabaseNumberOfTimes = 0
                 });
             }
         }
@@ -153,31 +154,20 @@ namespace WpfApp
                 try
                 {
                     var httpResponse = client.GetAsync(url).Result;
-                    var stats = JsonConvert.DeserializeObject<string[]>(httpResponse.Content.ReadAsStringAsync().Result);
-                    if (stats.Length == 0)
+                    var stats = JsonConvert.DeserializeObject<List<DatabaseGet>>(httpResponse.Content.ReadAsStringAsync().Result);
+                    foreach(var label in AllClassLabelsCollection)
                     {
-                        dispatcher.BeginInvoke(new Action(() =>
-                        {
-                        }));
-                    }
-                    else
-                    {
-                        string statsOutput = "Statistics:\n";
-                        for (int i = 0; i < stats.Length; i++)
-                        {
-                            statsOutput += stats[i] + "\n";
-                        }
-
-                        dispatcher.BeginInvoke(new Action(() =>
-                        {
-                        }));
+                        var query = from item in stats
+                                    where item.ClassLabel == label.ClassLabel
+                                    select item.Number;
+                        label.DatabaseNumberOfTimes = query.FirstOrDefault();
                     }
                 }
                 catch (AggregateException)
                 {
                     dispatcher.BeginInvoke(new Action(() =>
                     {
-                        MessageBox.Show("The connection is lost...");
+                        MessageBox.Show("The connection with server is lost...");
                     }));
                 }
 
@@ -213,7 +203,7 @@ namespace WpfApp
                 {
                     dispatcher.BeginInvoke(new Action(() =>
                     {
-                        MessageBox.Show("The connection is lost...");
+                        MessageBox.Show("The connection with server is lost...");
                     }));
                 }
 
@@ -1315,6 +1305,7 @@ namespace WpfApp
     public class AllClassLabels : INotifyPropertyChanged
     {
         private int times;
+        private int number;
 
         public event PropertyChangedEventHandler PropertyChanged;
         public string ClassLabel { get; set; }
@@ -1332,14 +1323,19 @@ namespace WpfApp
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("NumberOfTimes"));
             }
         }
-    }
 
-    public class RecognizedImage
-    {
-        public string Path { get; set; }
-        public string Image { get; set; }
-        public string ClassLabel { get; set; }
-        public string Probability { get; set; }
-    }
+        public int DatabaseNumberOfTimes
+        {
+            get
+            {
+                return number;
+            }
 
+            set
+            {
+                number = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DatabaseNumberOfTimes"));
+            }
+        }
+    }
 }
