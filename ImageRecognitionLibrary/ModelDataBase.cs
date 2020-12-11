@@ -43,7 +43,7 @@ namespace ObjectsImageRecognitionLibrary
 
     public class ModelContext: DbContext
     {
-        private readonly string DatabaseDirectory = @"..\ClassLibraryProjects\ImageRecognitionLibrary\model.db";
+        private readonly string DatabaseDirectory = @"..\ImageRecognitionLibrary\model.db";
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source = " + DatabaseDirectory);
         public DbSet<Blob> ImageContext { get; set; }
         public DbSet<ClassLabel> ClassLabels { get; set; }

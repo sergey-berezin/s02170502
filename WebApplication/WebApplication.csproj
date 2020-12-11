@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ClassLibraryProjects\ImageRecognitionLibrary\ImageRecognitionLibrary.csproj" />
+    <ProjectReference Include="..\ImageRecognitionLibrary\ImageRecognitionLibrary.csproj" />
     <ProjectReference Include="..\LibraryContracts\LibraryContracts.csproj" />
   </ItemGroup>
 

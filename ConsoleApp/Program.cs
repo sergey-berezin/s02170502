@@ -12,7 +12,7 @@ class Program
     static void Main(string[] args)
     {
         // Getting directory from console
-        Console.WriteLine("Type on the keyboard the name of the existing directory (otherwise, the default directory will be used) with the images to recognize and press \"Enter\":");
+        Console.WriteLine("Type on the keyboard the name of the existing directory with the images to recognize and press \"Enter\":");
         string directory = Console.ReadLine();
 
         // Library object creation, subscription to the event and recognition of objects in image
