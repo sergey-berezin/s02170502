@@ -33,7 +33,7 @@
         <ListBox x:Name="SingleClassLabelImagesListBox" Margin="630,92,87,32" ItemsSource="{Binding Path=SingleClassLabelCollection, UpdateSourceTrigger=PropertyChanged}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Image Source="{Binding Path=Path}" Height="94" Width="92" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    <Image Source="{Binding Path=Image}" Height="94" Width="92" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
@@ -46,7 +46,7 @@
                         <TextBlock Text=" - "/>
                         <TextBlock Text="{Binding Path=NumberOfTimes, UpdateSourceTrigger=PropertyChanged}"/>
                         <TextBlock Text=" images, "/>
-                        <TextBlock Text="{Binding Path=DatabaseNumberOfTimes, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock x:Name="DatabaseNumberTextBlock" Text="{Binding Path=DatabaseNumberOfTimes, UpdateSourceTrigger=PropertyChanged}"/>
                         <TextBlock Text=" images in Database."/>
                     </StackPanel>
                 </DataTemplate>

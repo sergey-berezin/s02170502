@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using System.ComponentModel;
+using LibraryContracts;
 
 namespace ObjectsImageRecognitionLibrary
 {
@@ -64,6 +65,9 @@ namespace ObjectsImageRecognitionLibrary
 
     public class ImageRecognitionLibrary
     {
+        private readonly ModelContext ModelContext;
+        private readonly object LockObject;
+
         // Session created for neural network probability computation 
         private static InferenceSession session;
 
@@ -122,11 +126,67 @@ namespace ObjectsImageRecognitionLibrary
             return new ObjectInImageProbability(fileName, classLabel, probability);
         }
 
+        // New version
+        private static ObjectInImageProbability ImageRecognition(string fileName, string stringImage)
+        {
+            const int TargetWidth = 224;
+            const int TargetHeight = 224;
+
+            // Image loading
+            byte[] blob = Convert.FromBase64String(stringImage);
+            using var image = Image.Load<Rgb24>(blob);
+
+            // Changing picture size to targeted sizes
+            image.Mutate(x =>
+            {
+                x.Resize(new ResizeOptions
+                {
+                    Size = new Size(TargetWidth, TargetHeight),
+                    Mode = ResizeMode.Crop // Keeping proportions, cropping excess
+                });
+            });
+
+            // Pixel to tensor convertion, normalization
+            var input = new DenseTensor<float>(new[] { 1, 3, TargetHeight, TargetWidth });
+            var mean = new[] { 0.485f, 0.456f, 0.406f };
+            var stddev = new[] { 0.229f, 0.224f, 0.225f };
+            for (int y = 0; y < TargetHeight; y++)
+            {
+                Span<Rgb24> pixelSpan = image.GetPixelRowSpan(y);
+                for (int x = 0; x < TargetWidth; x++)
+                {
+                    input[0, 0, y, x] = ((pixelSpan[x].R / 255f) - mean[0]) / stddev[0];
+                    input[0, 1, y, x] = ((pixelSpan[x].G / 255f) - mean[1]) / stddev[1];
+                    input[0, 2, y, x] = ((pixelSpan[x].B / 255f) - mean[2]) / stddev[2];
+                }
+            }
+
+            // Neural network input data preparation
+            var inputs = new List<NamedOnnxValue>
+            {
+                NamedOnnxValue.CreateFromTensor("data", input)
+            };
+
+            // Neural network probability computation     
+            using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
+
+            // Getting outputs
+            var output = results.First().AsEnumerable<float>().ToArray();
+            var sum = output.Sum(x => (float)Math.Exp(x));
+            var softmax = output.Select(x => (float)Math.Exp(x) / sum);
+            float probability = softmax.Max();
+            int classLabelsObjectsNumber = softmax.ToList().IndexOf(probability);
+            probability *= 100.0f;
+            string classLabel = classLabels[classLabelsObjectsNumber];
+
+            return new ObjectInImageProbability(fileName, classLabel, probability);
+        }
+
         // Getting the current directory path
-        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
+        readonly string StartDirectory = Directory.GetParent(Environment.CurrentDirectory).FullName;
         
         // Token for cancellation
-        readonly CancellationTokenSource cts = new CancellationTokenSource();
+        CancellationTokenSource cts = new CancellationTokenSource();
 
         // Event for output
         public event EventHandler ResultEvent;
@@ -139,27 +199,17 @@ namespace ObjectsImageRecognitionLibrary
         // Class Constructor
         public ImageRecognitionLibrary(){
             // Session initialization for all images in directory
-            session = new InferenceSession(Path.Combine(StartDirectory, "resnet152-v2-7.onnx"));
+            session = new InferenceSession(Path.Combine(StartDirectory, "resnet152-v2-7.onnx")); 
+            ModelContext = new ModelContext();
+            LockObject = new object();
         }
 
         // Getting all the images from existing or default directory and recognition of objects using TPL
         public void ProgramStart(string path)
         {
-            //If the directory does not exist, the default directory will be used
-            //if (!Directory.Exists(path)){
-            //    path = Path.Combine(StartDirectory, "Images");
-            //}
+            cts = new CancellationTokenSource();
             // Getting all the .jpg pictures from directory
-            string[] filePaths;
-            try
-            {
-                filePaths = Directory.GetFiles(@path, "*.jpg");
-            }
-            catch (IOException)
-            {
-                filePaths = new string[1];
-                filePaths[0] = path;
-            }
+            string[] filePaths = Directory.GetFiles(@path, "*.jpg");
                  
             // Data processing with TPL [tasks]
             var tasks = new Task[filePaths.Count()];
@@ -167,17 +217,94 @@ namespace ObjectsImageRecognitionLibrary
                 tasks[i] = Task.Factory.StartNew(pi =>
                 {
                     int idx = (int)pi;
-                    if (!cts.Token.IsCancellationRequested)
+                    ImageObject image;
+                    
+                    lock (LockObject)
                     {
-                        ObjectInImageProbability result = ImageRecognition(filePaths[idx]);
-                        this.ResultEvent?.Invoke(this, result);
+                        image = ModelContext.DatabaseCheck(filePaths[idx]);
                     }
+
+                    if (image == null)
+                    {
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            ObjectInImageProbability result = ImageRecognition(filePaths[idx]);
+                            this.ResultEvent?.Invoke(this, result);
+                            
+                            lock (LockObject)
+                            {
+                                ModelContext.DatabaseAdding(result);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            ObjectInImageProbability result = new ObjectInImageProbability(filePaths[idx], image.ClassLabel, image.Probability);
+                            this.ResultEvent?.Invoke(this, result);
+                        }
+                    }
+
                 }, i);
             }
             Task.WaitAll(tasks);
         }
-    
-    // List of objects that can be recognized
+
+        // New version
+        public void ProgramStart(List<StringPathAndImage> strings)
+        {
+            cts = new CancellationTokenSource();
+
+            List<string> filePaths = new List<string>();
+            List<string> imageList = new List<string>();
+            foreach (var item in strings)
+            {
+                filePaths.Add(item.Path);
+                imageList.Add(item.Image);
+            }
+
+            var tasks = new Task[filePaths.Count()];
+            for (int i = 0; i <= filePaths.Count() - 1; i++)
+            {
+                tasks[i] = Task.Factory.StartNew(pi =>
+                {
+                    int idx = (int)pi;
+                    ImageObject image;
+
+                    lock (LockObject)
+                    {
+                        image = ModelContext.DatabaseCheck(filePaths[idx]);
+                    }
+
+                    if (image == null)
+                    {
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            ObjectInImageProbability result = ImageRecognition(filePaths[idx], imageList[idx]);
+                            this.ResultEvent?.Invoke(this, result);
+
+                            lock (LockObject)
+                            {
+                                ModelContext.DatabaseAdding(result);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            ObjectInImageProbability result = new ObjectInImageProbability(filePaths[idx], image.ClassLabel, image.Probability);
+                            this.ResultEvent?.Invoke(this, result);
+                        }
+                    }
+
+                }, i);
+            }
+            Task.WaitAll(tasks);
+        }
+
+        // List of objects that can be recognized
         static public string[] classLabels = new[] 
         {   
             "tench",

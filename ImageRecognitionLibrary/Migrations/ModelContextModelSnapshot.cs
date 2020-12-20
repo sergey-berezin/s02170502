@@ -3,9 +3,9 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using WpfApp;
+using ObjectsImageRecognitionLibrary;
 
-namespace WpfApp.Migrations
+namespace ImageRecognitionLibrary.Migrations
 {
     [DbContext(typeof(ModelContext))]
     partial class ModelContextModelSnapshot : ModelSnapshot
@@ -16,7 +16,7 @@ namespace WpfApp.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "5.0.0");
 
-            modelBuilder.Entity("WpfApp.Blob", b =>
+            modelBuilder.Entity("ObjectsImageRecognitionLibrary.Blob", b =>
                 {
                     b.Property<int>("BlobId")
                         .ValueGeneratedOnAdd()
@@ -30,7 +30,7 @@ namespace WpfApp.Migrations
                     b.ToTable("ImageContext");
                 });
 
-            modelBuilder.Entity("WpfApp.ClassLabel", b =>
+            modelBuilder.Entity("ObjectsImageRecognitionLibrary.ClassLabel", b =>
                 {
                     b.Property<int>("ClassLabelId")
                         .ValueGeneratedOnAdd()
@@ -47,7 +47,7 @@ namespace WpfApp.Migrations
                     b.ToTable("ClassLabels");
                 });
 
-            modelBuilder.Entity("WpfApp.ImageInformation", b =>
+            modelBuilder.Entity("ObjectsImageRecognitionLibrary.ImageInformation", b =>
                 {
                     b.Property<int>("ImageInformationId")
                         .ValueGeneratedOnAdd()
@@ -74,13 +74,13 @@ namespace WpfApp.Migrations
                     b.ToTable("ImagesInformation");
                 });
 
-            modelBuilder.Entity("WpfApp.ImageInformation", b =>
+            modelBuilder.Entity("ObjectsImageRecognitionLibrary.ImageInformation", b =>
                 {
-                    b.HasOne("WpfApp.ClassLabel", "ClassLabel")
+                    b.HasOne("ObjectsImageRecognitionLibrary.ClassLabel", "ClassLabel")
                         .WithMany("ImagesInformation")
                         .HasForeignKey("ClassLabelId");
 
-                    b.HasOne("WpfApp.Blob", "ImageContext")
+                    b.HasOne("ObjectsImageRecognitionLibrary.Blob", "ImageContext")
                         .WithMany()
                         .HasForeignKey("ImageContextBlobId");
 
@@ -89,7 +89,7 @@ namespace WpfApp.Migrations
                     b.Navigation("ImageContext");
                 });
 
-            modelBuilder.Entity("WpfApp.ClassLabel", b =>
+            modelBuilder.Entity("ObjectsImageRecognitionLibrary.ClassLabel", b =>
                 {
                     b.Navigation("ImagesInformation");
                 });
