@@ -9,8 +9,8 @@ using ObjectsImageRecognitionLibrary;
 namespace ImageRecognitionLibrary.Migrations
 {
     [DbContext(typeof(ModelContext))]
-    [Migration("20201212174047_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20201220152304_ClientServer")]
+    partial class ClientServer
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

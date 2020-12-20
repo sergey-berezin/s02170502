@@ -47,11 +47,22 @@ namespace WpfApp
         {
             RecognitionStatus = true;
 
+            List<StringPathAndImage> strings = new List<StringPathAndImage>();
+            foreach (var path in Directory.GetFiles(ChosenDirectoryPath, "*.jpg"))
+            {
+                StringPathAndImage str = new StringPathAndImage
+                {
+                    Path = path,
+                    Image = Convert.ToBase64String(File.ReadAllBytes(path))
+                };
+                strings.Add(str);
+            }
+
             ThreadPool.QueueUserWorkItem(new WaitCallback(async MagicParameter =>
             {
                 try
                 {
-                    var content = new StringContent(JsonConvert.SerializeObject(ChosenDirectoryPath), Encoding.UTF8, "application/json");
+                    var content = new StringContent(JsonConvert.SerializeObject(strings), Encoding.UTF8, "application/json");
                     HttpResponseMessage httpResponse;
                     try
                     {
